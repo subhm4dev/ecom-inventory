@@ -8,7 +8,7 @@ Inventory and Stock Management Service.
 
 ## Endpoints
 
-- `POST /v1/inventory/adjust` - Adjust stock quantity
+- `POST /api/v1/inventory/adjust` - Adjust stock quantity
 
 ## Events
 

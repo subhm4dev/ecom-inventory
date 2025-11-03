@@ -34,7 +34,7 @@ import java.util.UUID;
  * concurrent order processing. Distributed locks may be used for high-concurrency scenarios.
  */
 @RestController
-@RequestMapping("/v1/inventory")
+@RequestMapping("/api/v1/inventory")
 @Tag(name = "Inventory", description = "Stock and inventory management endpoints")
 @SecurityRequirement(name = "bearerAuth")
 public class InventoryController {
