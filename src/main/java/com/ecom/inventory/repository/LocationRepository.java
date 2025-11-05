@@ -10,6 +10,7 @@ import java.util.UUID;
 @Repository
 public interface LocationRepository extends JpaRepository<Location, UUID> {
     List<Location> findByTenantIdAndActiveTrue(UUID tenantId);
+    List<Location> findByTenantId(UUID tenantId);
     java.util.Optional<Location> findByIdAndTenantId(UUID id, UUID tenantId);
 }
 
