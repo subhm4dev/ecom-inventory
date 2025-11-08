@@ -35,16 +35,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        log.debug("JWT filter processing request: {} {}", request.getMethod(), request.getRequestURI());
         String authorizationHeader = request.getHeader("Authorization");
         
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            log.debug("No Authorization header found, continuing filter chain");
+            log.warn("No Authorization header found for request: {} {}", request.getMethod(), request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             String token = authorizationHeader.substring(7);
+            log.debug("Validating JWT token for request: {} {} (token length: {})", 
+                request.getMethod(), request.getRequestURI(), token.length());
             JWTClaimsSet claims = jwtValidationService.validateToken(token);
             
             String userId = jwtValidationService.extractUserId(claims);
@@ -60,19 +63,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (IllegalArgumentException e) {
-            log.warn("JWT validation failed: {}", e.getMessage());
+            log.error("JWT validation failed for request: {} {} - {}", 
+                request.getMethod(), request.getRequestURI(), e.getMessage());
             SecurityContextHolder.clearContext();
-            filterChain.doFilter(request, response);
+            // Set 403 response with error message
+            try {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                String errorMessage = "{\"error\":\"JWT validation failed: " + e.getMessage().replace("\"", "\\\"") + "\"}";
+                response.getWriter().write(errorMessage);
+                response.getWriter().flush();
+            } catch (IOException ioException) {
+                log.error("Failed to write error response", ioException);
+            }
             return;
         } catch (RuntimeException e) {
-            log.warn("JWT validation failed: {}", e.getMessage(), e);
+            log.error("JWT validation failed for request: {} {} - {}", 
+                request.getMethod(), request.getRequestURI(), e.getMessage(), e);
             SecurityContextHolder.clearContext();
-            filterChain.doFilter(request, response);
+            // Set 403 response with error message
+            try {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                String errorMessage = "{\"error\":\"JWT validation failed: " + e.getMessage().replace("\"", "\\\"") + "\"}";
+                response.getWriter().write(errorMessage);
+                response.getWriter().flush();
+            } catch (IOException ioException) {
+                log.error("Failed to write error response", ioException);
+            }
             return;
         } catch (Exception e) {
-            log.error("Unexpected error during JWT authentication", e);
+            log.error("Unexpected error during JWT authentication for request: {} {}", 
+                request.getMethod(), request.getRequestURI(), e);
             SecurityContextHolder.clearContext();
-            filterChain.doFilter(request, response);
+            // Set 403 response with error message
+            try {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                String errorMessage = "{\"error\":\"JWT authentication error: " + e.getMessage().replace("\"", "\\\"") + "\"}";
+                response.getWriter().write(errorMessage);
+                response.getWriter().flush();
+            } catch (IOException ioException) {
+                log.error("Failed to write error response", ioException);
+            }
             return;
         }
 
